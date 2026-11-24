@@ -79,7 +79,7 @@ begin
     raise exception 'Approved automation configuration was unexpectedly mutable';
   exception when check_violation then null;
   end;
-end $;
+end $$;
 
 -- A sales member cannot promote itself to owner.
 set local role authenticated;
