@@ -87,6 +87,22 @@ begin
     raise exception 'JSONB credential-key constraints are missing';
   end if;
 
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.campaigns'::regclass
+      and conname = 'campaigns_approval_state_consistent'
+  ) or not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.automation_rules'::regclass
+      and conname = 'automation_rules_approval_state_consistent'
+  ) then
+    raise exception 'Approval-state consistency constraints are missing';
+  end if;
+
+  if not has_table_privilege('service_role','public.audit_events','INSERT') then
+    raise exception 'Trusted service role must be able to append audit events';
+  end if;
+
   if has_function_privilege('authenticated', 'private.ensure_active_organization_owner()', 'EXECUTE')
      or has_function_privilege('authenticated', 'private.guard_tenant_row_mutations()', 'EXECUTE')
      or has_function_privilege('authenticated', 'private.reject_audit_event_mutation()', 'EXECUTE') then
