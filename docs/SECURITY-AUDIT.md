@@ -3,14 +3,14 @@
 - Audit date: 2026-11-24
 - Repository: `FULAMA/sokopilot-ai` (public)
 - Audited branch: `audit/persistence-feedback-validation`
-- Audited commit: `d1b939760db5aa43c9eca7b34921ce0a06872b10`
+- Audited commit: `e61f6dd64239c1247aa8810daaf72e081b160573`
 - Scope: repository configuration, reachable Git history, dependency advisory database, CI workflow and connector discovery.
 
 ## Results
 
 | Control | Result | Evidence |
 |---|---|---|
-| Secret detection in reachable Git history | PASS | Gitleaks v8.30.1 scanned 35 commits and approximately 402,859 bytes; no leaks found |
+| Secret detection in reachable Git history | PASS | Gitleaks v8.30.1 scanned 40 commits and approximately 405,480 bytes; no leaks found |
 | Dependency vulnerability audit | PASS | `npm audit --audit-level=high`; 0 vulnerabilities reported |
 | TypeScript check | PASS | `npm run lint` |
 | Automated tests | PASS | 22 tests passed, 0 failed |
