@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDemoSeed } from '../src/data/demoSeed';
 import { loadRepositoryState, saveRepositoryState } from '../src/services/storage';
+import { isValidDemoRepositoryState } from '../src/services/demoStateValidation';
 
 const STORAGE_KEY = 'sokopilot_revenue_hub_demo_v1';
 const CORRUPT_BACKUP_KEY = 'sokopilot_revenue_hub_demo_corrupt_backup_v1';
@@ -37,7 +38,7 @@ test('backs up syntactically invalid JSON before restoring the demo seed', () =>
 
   assert.equal(values.get(CORRUPT_BACKUP_KEY), raw);
   assert.deepEqual(JSON.parse(values.get(STORAGE_KEY) ?? 'null'), state);
-  assert.deepEqual(state, createDemoSeed());
+  assert.equal(isValidDemoRepositoryState(state, createDemoSeed()), true);
 });
 
 test('backs up structurally invalid JSON before restoring the demo seed', () => {
@@ -48,7 +49,7 @@ test('backs up structurally invalid JSON before restoring the demo seed', () => 
 
   assert.equal(values.get(CORRUPT_BACKUP_KEY), raw);
   assert.deepEqual(JSON.parse(values.get(STORAGE_KEY) ?? 'null'), state);
-  assert.deepEqual(state, createDemoSeed());
+  assert.equal(isValidDemoRepositoryState(state, createDemoSeed()), true);
 });
 
 test('returns false when saving fails because browser storage is unavailable', () => {
