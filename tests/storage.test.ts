@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDemoSeed } from '../src/data/demoSeed';
-import { loadRepositoryState, resetRepositoryState, saveRepositoryState, upsertOffer } from '../src/services/storage';
+import { applyLeadStageTransition, loadRepositoryState, resetRepositoryState, saveRepositoryState, updateSettingsAndRole, upsertCampaign, upsertLead, upsertOffer } from '../src/services/storage';
 import { isValidDemoRepositoryState } from '../src/services/demoStateValidation';
 
 const STORAGE_KEY = 'sokopilot_revenue_hub_demo_v1';
@@ -76,4 +76,55 @@ test('does not reset in-memory data when the reset cannot be persisted', () => {
   const result = resetRepositoryState(state);
 
   assert.equal(result, state);
+});
+
+
+test('does not overwrite corrupted source data when its backup cannot be written', () => {
+  const raw = '{"leads": invalid-json';
+  const values = installLocalStorage({ [STORAGE_KEY]: raw }, true);
+
+  const state = loadRepositoryState();
+
+  assert.equal(isValidDemoRepositoryState(state, createDemoSeed()), true);
+  assert.equal(values.get(STORAGE_KEY), raw);
+  assert.equal(values.has(CORRUPT_BACKUP_KEY), false);
+});
+
+test('reports persistence failures through the browser event channel', () => {
+  installLocalStorage({}, true);
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  const received: Event[] = [];
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: { dispatchEvent: (event: Event) => { received.push(event); return true; } },
+  });
+
+  try {
+    assert.equal(saveRepositoryState(createDemoSeed()), false);
+    assert.equal(received.length, 1);
+    assert.equal(received[0].type, 'sokopilot:persistence-error');
+  } finally {
+    if (originalWindow) {
+      Object.defineProperty(globalThis, 'window', originalWindow);
+    } else {
+      Reflect.deleteProperty(globalThis, 'window');
+    }
+  }
+});
+
+test('all repository mutation helpers keep the previous state after a failed write', () => {
+  installLocalStorage({}, true);
+  const state = createDemoSeed();
+
+  const changedLead = { ...state.leads[0], fullName: 'Modification non persistée' };
+  const changedCampaign = { ...state.campaigns[0], title: 'Modification non persistée' };
+  const changedSettings = { ...state.settings, workspaceName: 'Modification non persistée' };
+
+  assert.equal(upsertLead(state, changedLead, false, 'Test'), state);
+  assert.equal(upsertCampaign(state, changedCampaign, false, 'Test'), state);
+  assert.equal(updateSettingsAndRole(state, changedSettings), state);
+  assert.equal(
+    applyLeadStageTransition(state, state.leads[0].id, 'Perdu', 'Test', 'Motif de test'),
+    state
+  );
 });
