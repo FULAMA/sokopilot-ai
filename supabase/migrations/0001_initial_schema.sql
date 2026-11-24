@@ -412,6 +412,8 @@ grant select on public.integration_connections to authenticated;
 grant select,insert,update,delete on public.automation_rules to authenticated;
 grant select on public.audit_events to authenticated;
 grant usage,select on sequence public.audit_events_id_seq to authenticated;
+grant all on all tables in schema public to service_role;
+grant all on all sequences in schema public to service_role;
 
 revoke all on function private.is_org_member(uuid) from public,anon;
 revoke all on function private.has_org_role(uuid,public.app_role[]) from public,anon;
