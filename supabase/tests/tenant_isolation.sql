@@ -63,7 +63,23 @@ begin
     raise exception 'Credential-shaped automation config unexpectedly persisted';
   exception when check_violation then null;
   end;
-end $$;
+  insert into public.campaigns (org_id, title, channel, status, content)
+    values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Approved campaign', 'email', 'approved', 'Original content');
+  begin
+    update public.campaigns set content = 'Tampered content'
+      where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and title = 'Approved campaign';
+    raise exception 'Approved campaign content was unexpectedly mutable';
+  exception when check_violation then null;
+  end;
+  insert into public.automation_rules (org_id, name, trigger_type, action_type, status)
+    values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'Approved automation', 'manual', 'manual', 'active');
+  begin
+    update public.automation_rules set configuration = '{"changed":true}'::jsonb
+      where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and name = 'Approved automation';
+    raise exception 'Approved automation configuration was unexpectedly mutable';
+  exception when check_violation then null;
+  end;
+end $;
 
 -- A sales member cannot promote itself to owner.
 set local role authenticated;
