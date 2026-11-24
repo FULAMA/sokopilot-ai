@@ -3,7 +3,6 @@ name: PostgreSQL migration tests
 on:
   pull_request:
   push:
-    branches: [main]
 
 permissions:
   contents: read
