@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, RotateCcw, Save, CheckCircle2 } from 'lucide-react';
+import { Download, RotateCcw, Save } from 'lucide-react';
 import {
   Currency,
   DemoRepositoryState,
@@ -20,13 +20,10 @@ export const ParametresView: React.FC<ParametresViewProps> = ({
   onRequestResetDemo,
 }) => {
   const [form, setForm] = useState<OrganizationSettings>({ ...state.settings });
-  const [savedFeedback, setSavedFeedback] = useState(false);
 
   const handleSaveOrg = (e: React.FormEvent) => {
     e.preventDefault();
     onSaveSettings(form);
-    setSavedFeedback(true);
-    setTimeout(() => setSavedFeedback(false), 2200);
   };
 
   const handleExportJson = () => {
@@ -138,13 +135,8 @@ export const ParametresView: React.FC<ParametresViewProps> = ({
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 pt-4">
-          <div className="text-xs text-emerald-700">
-            {savedFeedback && (
-              <span className="inline-flex items-center gap-1.5 font-medium">
-                <CheckCircle2 className="h-4 w-4" />
-                Paramètres enregistrés localement.
-              </span>
-            )}
+          <div className="text-xs text-slate-500">
+            Les erreurs de sauvegarde sont signalées dans l’espace de travail.
           </div>
           <button
             type="submit"

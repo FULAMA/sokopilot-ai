@@ -11,41 +11,82 @@ import {
   TeamRole,
 } from '../types/domain';
 import { getLocalIsoDate } from '../utils/format';
+import { isValidDemoRepositoryState } from './demoStateValidation';
 
 const STORAGE_KEY = 'sokopilot_revenue_hub_demo_v1';
+const CORRUPT_BACKUP_KEY = 'sokopilot_revenue_hub_demo_corrupt_backup_v1';
+
+function preserveCorruptData(raw: string): boolean {
+  try {
+    localStorage.setItem(CORRUPT_BACKUP_KEY, raw);
+    return true;
+  } catch {
+    // Never overwrite the only copy when the recovery backup cannot be written.
+    return false;
+  }
+}
 
 export function loadRepositoryState(): DemoRepositoryState {
+  const seed = createDemoSeed();
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const seed = createDemoSeed();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
       return seed;
     }
-    const parsed = JSON.parse(raw) as DemoRepositoryState;
-    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.leads)) {
-      const seed = createDemoSeed();
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // Preserve invalid JSON too; otherwise a recovery would destroy evidence.
+      if (!preserveCorruptData(raw)) return seed;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
       return seed;
     }
-    return parsed;
+
+    if (isValidDemoRepositoryState(parsed, seed)) return parsed;
+
+    // Preserve structurally malformed data before restoring the demo seed.
+    if (!preserveCorruptData(raw)) return seed;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+    return seed;
   } catch {
-    return createDemoSeed();
+    // If storage is unavailable, keep the app usable in memory.
+    return seed;
   }
 }
 
-export function saveRepositoryState(state: DemoRepositoryState): void {
+/** Returns false when browser storage is unavailable or quota is exceeded. */
+export function saveRepositoryState(state: DemoRepositoryState): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
   } catch {
-    // Ignore storage quota errors in sandboxed iframes
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sokopilot:persistence-error'));
+      }
+    } catch {
+      // The persistence failure must still be reported through the return value.
+    }
+    return false;
   }
 }
 
-export function resetRepositoryState(): DemoRepositoryState {
+function persistOrKeepPrevious(
+  previous: DemoRepositoryState,
+  next: DemoRepositoryState
+): DemoRepositoryState {
+  return saveRepositoryState(next) ? next : previous;
+}
+
+export function resetRepositoryState(
+  previous: DemoRepositoryState
+): DemoRepositoryState {
   const fresh = createDemoSeed();
-  saveRepositoryState(fresh);
-  return fresh;
+  return persistOrKeepPrevious(previous, fresh);
 }
 
 export function exportRepositoryAsJson(state: DemoRepositoryState): string {
@@ -128,8 +169,7 @@ export function applyLeadStageTransition(
     activities: [newActivity, ...state.activities].slice(0, 30),
   };
 
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function upsertLead(
@@ -183,8 +223,7 @@ export function upsertLead(
     followUps: nextFollowUps,
     activities: [activity, ...state.activities].slice(0, 30),
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function upsertOffer(
@@ -211,8 +250,7 @@ export function upsertOffer(
     offers: nextOffers,
     activities: [activity, ...state.activities].slice(0, 30),
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function upsertCampaign(
@@ -244,8 +282,7 @@ export function upsertCampaign(
     campaigns: nextCampaigns,
     activities: [activity, ...state.activities].slice(0, 30),
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function updateSettingsAndRole(
@@ -263,6 +300,5 @@ export function updateSettingsAndRole(
     settings,
     team: nextTeam,
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
