@@ -122,6 +122,7 @@ function isNonNegativeFinite(value: unknown): boolean {
 }
 
 function hasValidSemantics(value: DemoRepositoryState): boolean {
+  const fail = (reason: string): false => { console.error(`Demo state validation failed: ${reason}`); return false; };
   const state = value as DemoRepositoryState;
 
   if (
@@ -131,7 +132,7 @@ function hasValidSemantics(value: DemoRepositoryState): boolean {
     !hasUniqueIds(state.campaigns) ||
     !hasUniqueIds(state.activities) ||
     !hasUniqueIds(state.team)
-  ) return false;
+  ) return fail('collection identifiers');
 
   if (!state.leads.every((lead) =>
     isOneOf(lead.stage, LEAD_STAGES) &&
@@ -143,43 +144,43 @@ function hasValidSemantics(value: DemoRepositoryState): boolean {
     isDateOnly(lead.updatedAt) &&
     hasUniqueIds(lead.notes) &&
     lead.notes.every((note) => isTimestamp(note.createdAt))
-  )) return false;
+  )) return fail('lead records');
 
   if (!state.offers.every((offer) =>
     isOneOf(offer.currency, CURRENCIES) &&
     isNonNegativeFinite(offer.price) &&
     isDateOnly(offer.updatedAt)
-  )) return false;
+  )) return fail('offer records');
 
   if (!state.followUps.every((task) =>
     isOneOf(task.channel, FOLLOW_UP_CHANNELS) &&
     isDateOnly(task.dueDate) &&
     isDateOnly(task.createdAt) &&
     (task.completedAt === undefined || isDateOnly(task.completedAt))
-  )) return false;
+  )) return fail('follow-up records');
 
   if (!state.campaigns.every((campaign) =>
     isOneOf(campaign.status, CAMPAIGN_STATUSES) &&
     isDateOnly(campaign.scheduledDate) &&
     isDateOnly(campaign.updatedAt) &&
     (campaign.approvedAt === undefined || isDateOnly(campaign.approvedAt))
-  )) return false;
+  )) return fail('campaign records');
 
   if (!state.activities.every((activity) =>
     isOneOf(activity.type, ACTIVITY_TYPES) &&
     isOneOf(activity.targetSection, NAV_SECTIONS) &&
     isTimestamp(activity.timestamp)
-  )) return false;
+  )) return fail('activity records');
 
   if (!state.team.every((member) => isOneOf(member.role, TEAM_ROLES))) {
-    return false;
+    return fail('team roles');
   }
 
   if (
     !isOneOf(state.settings.defaultCurrency, CURRENCIES) ||
     !Number.isFinite(state.settings.usdToCdfRate) ||
     state.settings.usdToCdfRate <= 0
-  ) return false;
+  ) return fail('organization settings');
 
   if (
     !Number.isFinite(state.baseline.conversionRatePct) ||
@@ -192,7 +193,7 @@ function hasValidSemantics(value: DemoRepositoryState): boolean {
       item.percentage >= 0 &&
       item.percentage <= 100
     )
-  ) return false;
+  ) return fail('dashboard baseline');
 
   return true;
 }
