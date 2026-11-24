@@ -62,14 +62,32 @@ begin
   end if;
 
   if tg_table_name = 'campaigns' then
-    if old.approved_at is not null
-       and (new.approved_by is distinct from old.approved_by or new.approved_at is distinct from old.approved_at) then
-      raise exception 'Campaign approval attribution is immutable' using errcode = '23514';
+    if old.approved_at is not null then
+      if new.approved_by is distinct from old.approved_by
+         or new.approved_at is distinct from old.approved_at then
+        raise exception 'Campaign approval attribution is immutable' using errcode = '23514';
+      end if;
+      if new.title is distinct from old.title
+         or new.objective is distinct from old.objective
+         or new.channel is distinct from old.channel
+         or new.content is distinct from old.content
+         or new.scheduled_at is distinct from old.scheduled_at then
+        raise exception 'Approved campaign content is immutable; create a new draft revision' using errcode = '23514';
+      end if;
     end if;
   elsif tg_table_name = 'automation_rules' then
-    if old.approved_at is not null
-       and (new.approved_by is distinct from old.approved_by or new.approved_at is distinct from old.approved_at) then
-      raise exception 'Automation approval attribution is immutable' using errcode = '23514';
+    if old.approved_at is not null then
+      if new.approved_by is distinct from old.approved_by
+         or new.approved_at is distinct from old.approved_at then
+        raise exception 'Automation approval attribution is immutable' using errcode = '23514';
+      end if;
+      if new.name is distinct from old.name
+         or new.trigger_type is distinct from old.trigger_type
+         or new.action_type is distinct from old.action_type
+         or new.requires_human_approval is distinct from old.requires_human_approval
+         or new.configuration is distinct from old.configuration then
+        raise exception 'Approved automation configuration is immutable; create a new draft revision' using errcode = '23514';
+      end if;
     end if;
   end if;
 
@@ -199,6 +217,27 @@ alter table public.integration_connections
 alter table public.automation_rules
   add constraint automation_rules_configuration_no_secrets
   check (not private.jsonb_has_sensitive_key(configuration));
+
+-- Approval metadata must be complete and cannot be cleared to silently unapprove a record.
+alter table public.campaigns
+  add constraint campaigns_approval_state_consistent
+  check (
+    (status in ('draft','review') and approved_by is null and approved_at is null)
+    or
+    (status in ('approved','scheduled','paused','completed')
+      and approved_by is not null and approved_at is not null)
+  );
+
+alter table public.automation_rules
+  add constraint automation_rules_approval_state_consistent
+  check (
+    (status = 'active' and approved_by is not null and approved_at is not null)
+    or
+    (status in ('draft','paused') and (
+      (approved_by is null and approved_at is null)
+      or (approved_by is not null and approved_at is not null)
+    ))
+  );
 
 -- Internal trigger functions are not callable by application clients.
 revoke all on function private.guard_tenant_row_mutations() from public, anon, authenticated;
