@@ -55,3 +55,10 @@ The scanner fails the workflow if it finds a secret. Its output redacts secret m
 2. Keep the Gitleaks and dependency audit jobs enabled on all pull requests.
 3. Before backend launch, run tenant-isolation tests and review every exposed database table, RPC and storage policy.
 4. Rotate any credential if future scans identify a real exposure; removing it from the latest commit is insufficient.
+
+
+## Additional static analysis and dependency maintenance
+
+- GitHub CodeQL Action v4 completed JavaScript/TypeScript analysis successfully on commit `67b406fddcb04e5a765b87c044b4dba676dd4c5d`: https://github.com/FULAMA/sokopilot-ai/actions/runs/45431904288
+- The workflow's successful completion confirms that analysis ran and uploaded its result. It does not, by itself, mean the repository has zero CodeQL alerts; review GitHub Security → Code scanning when repository permissions allow.
+- Dependabot weekly update configuration has been added for npm dependencies and GitHub Actions. It is present on this audit branch and will take effect on the default branch after the PR chain is accepted.
