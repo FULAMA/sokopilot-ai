@@ -16,11 +16,13 @@ import { isValidDemoRepositoryState } from './demoStateValidation';
 const STORAGE_KEY = 'sokopilot_revenue_hub_demo_v1';
 const CORRUPT_BACKUP_KEY = 'sokopilot_revenue_hub_demo_corrupt_backup_v1';
 
-function preserveCorruptData(raw: string): void {
+function preserveCorruptData(raw: string): boolean {
   try {
     localStorage.setItem(CORRUPT_BACKUP_KEY, raw);
+    return true;
   } catch {
-    // Recovery must remain possible even when the backup cannot be written.
+    // Never overwrite the only copy when the recovery backup cannot be written.
+    return false;
   }
 }
 
@@ -39,7 +41,7 @@ export function loadRepositoryState(): DemoRepositoryState {
       parsed = JSON.parse(raw);
     } catch {
       // Preserve invalid JSON too; otherwise a recovery would destroy evidence.
-      preserveCorruptData(raw);
+      if (!preserveCorruptData(raw)) return seed;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
       return seed;
     }
@@ -47,7 +49,7 @@ export function loadRepositoryState(): DemoRepositoryState {
     if (isValidDemoRepositoryState(parsed, seed)) return parsed;
 
     // Preserve structurally malformed data before restoring the demo seed.
-    preserveCorruptData(raw);
+    if (!preserveCorruptData(raw)) return seed;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
     return seed;
   } catch {
@@ -62,8 +64,12 @@ export function saveRepositoryState(state: DemoRepositoryState): boolean {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;
   } catch {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('sokopilot:persistence-error'));
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('sokopilot:persistence-error'));
+      }
+    } catch {
+      // The persistence failure must still be reported through the return value.
     }
     return false;
   }

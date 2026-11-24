@@ -91,8 +91,12 @@ function isOneOf(value: unknown, allowed: string[]): boolean {
   return typeof value === 'string' && allowed.includes(value);
 }
 
+function isNonEmptyString(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function isDateOnly(value: unknown): boolean {
-  if (typeof value !== 'string' || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return false;
   }
   const date = new Date(`${value}T00:00:00.000Z`);
@@ -113,16 +117,21 @@ function hasUniqueIds(items: unknown[]): boolean {
       ? (item as Record<string, unknown>).id
       : undefined
   );
-  return ids.every((id) => typeof id === 'string' && id.length > 0) &&
-    new Set(ids).size === ids.length;
+  return (
+    ids.every((id) => typeof id === 'string' && id.trim().length > 0) &&
+    new Set(ids).size === ids.length
+  );
 }
 
 function isNonNegativeFinite(value: unknown): boolean {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0;
 }
 
+function hasNonEmptyStrings(values: unknown): boolean {
+  return Array.isArray(values) && values.every(isNonEmptyString);
+}
+
 function hasValidSemantics(value: DemoRepositoryState): boolean {
-  const fail = (reason: string): false => { console.error(`Demo state validation failed: ${reason}`); return false; };
   const state = value as DemoRepositoryState;
 
   if (
@@ -131,10 +140,21 @@ function hasValidSemantics(value: DemoRepositoryState): boolean {
     !hasUniqueIds(state.followUps) ||
     !hasUniqueIds(state.campaigns) ||
     !hasUniqueIds(state.activities) ||
+    !hasUniqueIds(state.automations) ||
+    !hasUniqueIds(state.automationAudit) ||
+    !hasUniqueIds(state.integrations) ||
     !hasUniqueIds(state.team)
-  ) return fail('collection identifiers');
+  ) return false;
 
   if (!state.leads.every((lead) =>
+    isNonEmptyString(lead.fullName) &&
+    isNonEmptyString(lead.organization) &&
+    isNonEmptyString(lead.city) &&
+    isNonEmptyString(lead.phone) &&
+    isNonEmptyString(lead.courseOfInterest) &&
+    isNonEmptyString(lead.assignedOwner) &&
+    isNonEmptyString(lead.nextAction) &&
+    (lead.email === '' || typeof lead.email === 'string') &&
     isOneOf(lead.stage, LEAD_STAGES) &&
     isOneOf(lead.source, LEAD_SOURCES) &&
     isOneOf(lead.currency, CURRENCIES) &&
@@ -142,47 +162,119 @@ function hasValidSemantics(value: DemoRepositoryState): boolean {
     isDateOnly(lead.nextFollowUpDate) &&
     isDateOnly(lead.createdAt) &&
     isDateOnly(lead.updatedAt) &&
+    (lead.stage !== 'Perdu' || isNonEmptyString(lead.lossReason)) &&
     hasUniqueIds(lead.notes) &&
-    lead.notes.every((note) => isTimestamp(note.createdAt))
-  )) return fail('lead records');
+    lead.notes.every((note) =>
+      isNonEmptyString(note.author) &&
+      isNonEmptyString(note.content) &&
+      isTimestamp(note.createdAt)
+    )
+  )) return false;
 
   if (!state.offers.every((offer) =>
+    isNonEmptyString(offer.name) &&
+    isNonEmptyString(offer.category) &&
+    isNonEmptyString(offer.description) &&
+    isNonEmptyString(offer.duration) &&
+    typeof offer.active === 'boolean' &&
     isOneOf(offer.currency, CURRENCIES) &&
     isNonNegativeFinite(offer.price) &&
     isDateOnly(offer.updatedAt)
-  )) return fail('offer records');
+  )) return false;
 
+  const leadIds = new Set(state.leads.map((lead) => lead.id));
   if (!state.followUps.every((task) =>
+    leadIds.has(task.leadId) &&
+    isNonEmptyString(task.leadName) &&
+    isNonEmptyString(task.leadPhone) &&
+    isNonEmptyString(task.subject) &&
+    isNonEmptyString(task.messageDraft) &&
+    typeof task.completed === 'boolean' &&
     isOneOf(task.channel, FOLLOW_UP_CHANNELS) &&
     isDateOnly(task.dueDate) &&
     isDateOnly(task.createdAt) &&
     (task.completedAt === undefined || isDateOnly(task.completedAt))
-  )) return fail('follow-up records');
+  )) return false;
 
   if (!state.campaigns.every((campaign) =>
+    isNonEmptyString(campaign.title) &&
+    isNonEmptyString(campaign.channel) &&
+    isNonEmptyString(campaign.targetAudience) &&
+    isNonEmptyString(campaign.contentDraft) &&
+    isNonEmptyString(campaign.owner) &&
     isOneOf(campaign.status, CAMPAIGN_STATUSES) &&
     isDateOnly(campaign.scheduledDate) &&
     isDateOnly(campaign.updatedAt) &&
-    (campaign.approvedAt === undefined || isDateOnly(campaign.approvedAt))
-  )) return fail('campaign records');
+    (campaign.approvedAt === undefined || isDateOnly(campaign.approvedAt)) &&
+    (campaign.approvedBy === undefined || isNonEmptyString(campaign.approvedBy))
+  )) return false;
 
   if (!state.activities.every((activity) =>
+    isNonEmptyString(activity.actor) &&
+    isNonEmptyString(activity.description) &&
+    isNonEmptyString(activity.targetLabel) &&
     isOneOf(activity.type, ACTIVITY_TYPES) &&
     isOneOf(activity.targetSection, NAV_SECTIONS) &&
-    isTimestamp(activity.timestamp)
-  )) return fail('activity records');
+    isTimestamp(activity.timestamp) &&
+    (activity.targetId === undefined || isNonEmptyString(activity.targetId))
+  )) return false;
 
-  if (!state.team.every((member) => isOneOf(member.role, TEAM_ROLES))) {
-    return fail('team roles');
-  }
+  if (!state.automations.every((rule) =>
+    isNonEmptyString(rule.name) &&
+    isNonEmptyString(rule.trigger) &&
+    isNonEmptyString(rule.action) &&
+    typeof rule.enabled === 'boolean' &&
+    hasNonEmptyStrings(rule.requirements) &&
+    isNonEmptyString(rule.safetyNotice)
+  )) return false;
+
+  if (!state.automationAudit.every((entry) =>
+    isNonEmptyString(entry.ruleName) &&
+    isNonEmptyString(entry.status) &&
+    isNonEmptyString(entry.note) &&
+    isTimestamp(entry.timestamp)
+  )) return false;
+
+  if (!state.integrations.every((integration) =>
+    isNonEmptyString(integration.name) &&
+    isNonEmptyString(integration.category) &&
+    isNonEmptyString(integration.description) &&
+    integration.status === 'Non connecté' &&
+    isNonEmptyString(integration.requiredScope)
+  )) return false;
+
+  if (!state.team.every((member) =>
+    isNonEmptyString(member.name) &&
+    isNonEmptyString(member.email) &&
+    isNonEmptyString(member.city) &&
+    isOneOf(member.role, TEAM_ROLES)
+  )) return false;
 
   if (
+    !isNonEmptyString(state.settings.workspaceName) ||
+    !isNonEmptyString(state.settings.legalName) ||
+    !isNonEmptyString(state.settings.city) ||
+    !isNonEmptyString(state.settings.country) ||
+    !isNonEmptyString(state.settings.contactPhone) ||
+    typeof state.settings.contactEmail !== 'string' ||
     !isOneOf(state.settings.defaultCurrency, CURRENCIES) ||
     !Number.isFinite(state.settings.usdToCdfRate) ||
     state.settings.usdToCdfRate <= 0
-  ) return fail('organization settings');
+  ) return false;
+
+  const baselineCounts = [
+    state.baseline.newLeadsCount,
+    state.baseline.qualifiedOpportunitiesCount,
+    state.baseline.pipelineValueCdf,
+    ...Object.values(state.baseline.stageCounts),
+  ];
+  const percentageTotal = state.baseline.sourcePercentages.reduce(
+    (total, item) => total + item.percentage,
+    0
+  );
 
   if (
+    !baselineCounts.every(isNonNegativeFinite) ||
     !Number.isFinite(state.baseline.conversionRatePct) ||
     state.baseline.conversionRatePct < 0 ||
     state.baseline.conversionRatePct > 100 ||
@@ -192,8 +284,9 @@ function hasValidSemantics(value: DemoRepositoryState): boolean {
       Number.isFinite(item.percentage) &&
       item.percentage >= 0 &&
       item.percentage <= 100
-    )
-  ) return fail('dashboard baseline');
+    ) ||
+    Math.abs(percentageTotal - 100) > 0.01
+  ) return false;
 
   return true;
 }

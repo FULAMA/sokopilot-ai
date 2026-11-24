@@ -76,3 +76,54 @@ test('rejects negative monetary values', () => {
   };
   assert.equal(isValidDemoRepositoryState(invalid, seed), false);
 });
+
+
+test('rejects automation records with invalid enabled flags', () => {
+  const seed = createDemoSeed();
+  const invalid = {
+    ...seed,
+    automations: [{ ...seed.automations[0], enabled: 'yes' }, ...seed.automations.slice(1)],
+  };
+  assert.equal(isValidDemoRepositoryState(invalid, seed), false);
+});
+
+test('rejects integration records that claim an unsupported connection state', () => {
+  const seed = createDemoSeed();
+  const invalid = {
+    ...seed,
+    integrations: [{ ...seed.integrations[0], status: 'Connecté' }, ...seed.integrations.slice(1)],
+  };
+  assert.equal(isValidDemoRepositoryState(invalid, seed), false);
+});
+
+test('rejects follow-ups referencing an unknown lead', () => {
+  const seed = createDemoSeed();
+  const invalid = {
+    ...seed,
+    followUps: [{ ...seed.followUps[0], leadId: 'lead-missing' }, ...seed.followUps.slice(1)],
+  };
+  assert.equal(isValidDemoRepositoryState(invalid, seed), false);
+});
+
+test('rejects invalid automation audit timestamps', () => {
+  const seed = createDemoSeed();
+  const invalid = {
+    ...seed,
+    automationAudit: [{ ...seed.automationAudit[0], timestamp: 'yesterday' }],
+  };
+  assert.equal(isValidDemoRepositoryState(invalid, seed), false);
+});
+
+test('rejects source percentages that do not total 100 percent', () => {
+  const seed = createDemoSeed();
+  const invalid = {
+    ...seed,
+    baseline: {
+      ...seed.baseline,
+      sourcePercentages: seed.baseline.sourcePercentages.map((item, index) =>
+        index === 0 ? { ...item, percentage: item.percentage - 10 } : item
+      ),
+    },
+  };
+  assert.equal(isValidDemoRepositoryState(invalid, seed), false);
+});
