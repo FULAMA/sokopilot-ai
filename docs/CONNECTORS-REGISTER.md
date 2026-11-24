@@ -88,7 +88,7 @@ Pour passer à **Intégré / testé**, ajouter dans le dossier de documentation 
 ## Preuve d'utilisation — audit sécurité du 24 novembre 2026
 
 - GitHub : inspection du dépôt et de son historique, vérification des PR et exécutions CI.
-- Gitleaks CLI v8.30.1 (MIT) : 36 commits analysés, environ 403 059 octets inspectés, aucun secret détecté.
+- Gitleaks CLI v8.30.1 (MIT) : 40 commits analysés, environ 405 480 octets inspectés, aucun secret détecté.
 - npm audit : zéro vulnérabilité signalée au niveau high ou supérieur.
 - CodeQL v4 : analyse JavaScript/TypeScript terminée avec succès; les alertes n'ont pas été consultées via le connecteur disponible.
 - Dependabot : mises à jour hebdomadaires npm et GitHub Actions configurées sur la branche d'audit; activation sur main après fusion de la chaîne de PR.
