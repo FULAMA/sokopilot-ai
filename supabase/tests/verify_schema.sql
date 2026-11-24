@@ -66,9 +66,12 @@ begin
     raise exception 'Append-only audit trigger is missing';
   end if;
 
-  if (select confdeltype from pg_constraint
-      where conrelid = 'public.audit_events'::regclass
-        and confrelid = 'public.organizations'::regclass limit 1) <> 'r' then
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'public.audit_events'::regclass
+      and confrelid = 'public.organizations'::regclass
+      and confdeltype = 'r'
+  ) then
     raise exception 'Audit history must restrict organization deletion';
   end if;
 
