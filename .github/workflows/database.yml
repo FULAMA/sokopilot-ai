@@ -1,0 +1,42 @@
+name: PostgreSQL migration tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  postgres-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: sokopilot_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d sokopilot_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sokopilot_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap test-only Supabase Auth shim
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/bootstrap_auth_mock.sql
+      - name: Apply initial schema
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0001_initial_schema.sql
+      - name: Apply tenant security hardening
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/0002_tenant_security_hardening.sql
+      - name: Verify schema and security controls
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/verify_schema.sql
+      - name: Run two-tenant RLS regression tests
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/tests/tenant_isolation.sql
