@@ -25,7 +25,7 @@
 | 7 | Base44 | Prototype alternatif / comparaison rapide de parcours UX | Indirect | Projet vide créé; pas de connexion backend utilisable vérifiée |
 | 8 | CodeWords | Génération et hébergement d'outils auxiliaires ou microservices si le besoin est confirmé | Indirect | Disponible, non utilisé |
 | 9 | Firecrawl | Collecte contrôlée de données publiques de centres de formation pour la prospection et la veille | Direct via pipeline d'import | Disponible, aucune collecte SOKOPILOT exécutée |
-| 10 | GitHub | Source de vérité du code, issues, revues, CI et traçabilité des versions | Indirect + intégration développeur | Partiellement utilisé et connecté : branches/PR/CI inspectées; workflow qualité + npm audit + Gitleaks CLI actifs sur la branche d'audit |
+| 10 | GitHub | Source de vérité du code, issues, revues, CI et traçabilité des versions | Indirect + intégration développeur | Partiellement utilisé et connecté : branches/PR/CI inspectées; npm audit, Gitleaks CLI et CodeQL actifs sur la branche d'audit; Dependabot configuré pour npm et GitHub Actions |
 | 11 | Gmail | Réception des demandes de démonstration, suivi commercial et support interne | Direct via backend / indirect pour l'équipe | Connecteur disponible; intégration produit non testée |
 | 12 | HAPI MCP Registry | Découverte de serveurs MCP spécialisés utiles aux connecteurs futurs | Indirect | Partiellement utilisé : recherche de scanners de secrets effectuée; Gitleaks Cloud trouvé via Apify mais non activé (jeton Apify et facturation requis) |
 | 13 | Lovable | Prototypage UX et comparaison de génération d'interfaces | Indirect | Projet SokoPilot Revenue Hub existant, génération limitée par crédits |
@@ -88,8 +88,10 @@ Pour passer à **Intégré / testé**, ajouter dans le dossier de documentation 
 ## Preuve d'utilisation — audit sécurité du 24 novembre 2026
 
 - GitHub : inspection du dépôt et de son historique, vérification des PR et exécutions CI.
-- Gitleaks CLI v8.30.1 (MIT) : 32 commits analysés, environ 396 993 octets inspectés, aucun secret détecté.
+- Gitleaks CLI v8.30.1 (MIT) : 36 commits analysés, environ 403 059 octets inspectés, aucun secret détecté.
 - npm audit : zéro vulnérabilité signalée au niveau high ou supérieur.
+- CodeQL v4 : analyse JavaScript/TypeScript terminée avec succès; les alertes n'ont pas été consultées via le connecteur disponible.
+- Dependabot : mises à jour hebdomadaires npm et GitHub Actions configurées sur la branche d'audit; activation sur main après fusion de la chaîne de PR.
 - HAPI MCP Registry : découverte d'un scanner Gitleaks Cloud, écarté car son exécution passe par Apify et nécessite un jeton facturable.
 - Plugin Management : recherche d'intégrations Snyk et d'alternatives de sécurité; aucune installation supplémentaire n'a été déclenchée.
 - Rapport détaillé : [SECURITY-AUDIT.md](./SECURITY-AUDIT.md).
