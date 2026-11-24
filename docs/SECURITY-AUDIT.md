@@ -10,7 +10,7 @@
 
 | Control | Result | Evidence |
 |---|---|---|
-| Secret detection in reachable Git history | PASS | Gitleaks v8.30.1 scanned 32 commits and approximately 396,993 bytes; no leaks found |
+| Secret detection in reachable Git history | PASS | Gitleaks v8.30.1 scanned 34 commits and approximately 402,720 bytes; no leaks found |
 | Dependency vulnerability audit | PASS | `npm audit --audit-level=high`; 0 vulnerabilities reported |
 | TypeScript check | PASS | `npm run lint` |
 | Automated tests | PASS | 22 tests passed, 0 failed |
