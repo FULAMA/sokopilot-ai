@@ -62,14 +62,25 @@ export function saveRepositoryState(state: DemoRepositoryState): boolean {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     return true;
   } catch {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sokopilot:persistence-error'));
+    }
     return false;
   }
 }
 
-export function resetRepositoryState(): DemoRepositoryState {
+function persistOrKeepPrevious(
+  previous: DemoRepositoryState,
+  next: DemoRepositoryState
+): DemoRepositoryState {
+  return saveRepositoryState(next) ? next : previous;
+}
+
+export function resetRepositoryState(
+  previous: DemoRepositoryState
+): DemoRepositoryState {
   const fresh = createDemoSeed();
-  saveRepositoryState(fresh);
-  return fresh;
+  return persistOrKeepPrevious(previous, fresh);
 }
 
 export function exportRepositoryAsJson(state: DemoRepositoryState): string {
@@ -152,8 +163,7 @@ export function applyLeadStageTransition(
     activities: [newActivity, ...state.activities].slice(0, 30),
   };
 
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function upsertLead(
@@ -207,8 +217,7 @@ export function upsertLead(
     followUps: nextFollowUps,
     activities: [activity, ...state.activities].slice(0, 30),
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function upsertOffer(
@@ -235,8 +244,7 @@ export function upsertOffer(
     offers: nextOffers,
     activities: [activity, ...state.activities].slice(0, 30),
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function upsertCampaign(
@@ -268,8 +276,7 @@ export function upsertCampaign(
     campaigns: nextCampaigns,
     activities: [activity, ...state.activities].slice(0, 30),
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
 
 export function updateSettingsAndRole(
@@ -287,6 +294,5 @@ export function updateSettingsAndRole(
     settings,
     team: nextTeam,
   };
-  saveRepositoryState(nextState);
-  return nextState;
+  return persistOrKeepPrevious(state, nextState);
 }
