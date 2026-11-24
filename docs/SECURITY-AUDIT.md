@@ -3,14 +3,14 @@
 - Audit date: 2026-11-24
 - Repository: `FULAMA/sokopilot-ai` (public)
 - Audited branch: `audit/persistence-feedback-validation`
-- Audited commit: `e61f6dd64239c1247aa8810daaf72e081b160573`
+- Audited commit: `1cbc354f3f127d6c52b8fcebc40c49f1122aa291`
 - Scope: repository configuration, reachable Git history, dependency advisory database, CI workflow and connector discovery.
 
 ## Results
 
 | Control | Result | Evidence |
 |---|---|---|
-| Secret detection in reachable Git history | PASS | Gitleaks v8.30.1 scanned 40 commits and approximately 405,480 bytes; no leaks found |
+| Secret detection in reachable Git history | PASS | Gitleaks v8.30.1 scanned 42 commits and approximately 405,792 bytes; no leaks found |
 | Dependency vulnerability audit | PASS | `npm audit --audit-level=high`; 0 vulnerabilities reported |
 | TypeScript check | PASS | `npm run lint` |
 | Automated tests | PASS | 22 tests passed, 0 failed |
@@ -44,7 +44,7 @@ The scanner fails the workflow if it finds a secret. Its output redacts secret m
 ## Limitations and residual risks
 
 - A clean Gitleaks scan is not proof that no credential was ever exposed. It covers the reachable history available to the CI checkout; it does not inspect deleted/unreachable Git objects, third-party clones, issue comments, external logs, uploaded artifacts, or values stored in GitHub Actions secrets.
-- The manual pattern review of the 24 commits in the audit branch is supplementary and is not a substitute for Gitleaks.
+- The Gitleaks scan covered 42 reachable commits (approximately 405,792 bytes) on the audited branch.
 - GitHub branch protection could not be verified with the available permissions. The repository owner should confirm that `main` requires review and successful checks before merge.
 - No backend, server-side authentication, database, tenant isolation, or active RLS policies exist yet. The application remains a frontend demo using browser storage.
 - No real customer information or production credentials should be placed in this demo repository.
@@ -59,6 +59,6 @@ The scanner fails the workflow if it finds a secret. Its output redacts secret m
 
 ## Additional static analysis and dependency maintenance
 
-- GitHub CodeQL Action v4 completed JavaScript/TypeScript analysis successfully on commit `67b406fddcb04e5a765b87c044b4dba676dd4c5d`: https://github.com/FULAMA/sokopilot-ai/actions/runs/45431904288
+- GitHub CodeQL Action v4 completed JavaScript/TypeScript analysis successfully on commit `1cbc354f3f127d6c52b8fcebc40c49f1122aa291` (push run 45432497746; pull-request run 45432507820)
 - The workflow's successful completion confirms that analysis ran and uploaded its result. It does not, by itself, mean the repository has zero CodeQL alerts; review GitHub Security → Code scanning when repository permissions allow.
 - Dependabot weekly update configuration has been added for npm dependencies and GitHub Actions. It is present on this audit branch and will take effect on the default branch after the PR chain is accepted.
