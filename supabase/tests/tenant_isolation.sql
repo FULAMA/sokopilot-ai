@@ -79,6 +79,24 @@ begin
     raise exception 'Approved automation configuration was unexpectedly mutable';
   exception when check_violation then null;
   end;
+  insert into public.audit_events (org_id, actor_user_id, action, entity_type)
+    values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', '10000000-0000-4000-8000-000000000001', 'lead.updated', 'lead');
+  begin
+    update public.audit_events set action = 'tampered'
+      where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    raise exception 'Audit event update unexpectedly succeeded';
+  exception when check_violation then null;
+  end;
+  begin
+    delete from public.audit_events where org_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    raise exception 'Audit event deletion unexpectedly succeeded';
+  exception when check_violation then null;
+  end;
+  begin
+    delete from public.organizations where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    raise exception 'Organization with audit history was unexpectedly deleted';
+  exception when foreign_key_violation then null;
+  end;
 end $$;
 
 -- A sales member cannot promote itself to owner.
