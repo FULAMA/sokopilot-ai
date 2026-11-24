@@ -1,0 +1,6 @@
+{
+  "name": "SOKOPILOT AI — Revenue Hub",
+  "description": "Plateforme B2B de pilotage des revenus, CRM prospects, relances commerciales et campagnes pour centres de formation et services (environnement de démonstration).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
