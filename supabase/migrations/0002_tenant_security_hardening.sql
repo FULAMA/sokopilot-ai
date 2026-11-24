@@ -12,22 +12,28 @@ set search_path = ''
 as $$
 begin
   if tg_op = 'INSERT' then
-    if auth.uid() is not null and tg_table_name = any(array[
-      'organizations','leads','offers','follow_up_tasks','campaigns','automation_rules'
-    ]) then
-      new.created_by := auth.uid();
+    if auth.uid() is not null then
+      if tg_table_name = any(array[
+        'organizations','leads','offers','follow_up_tasks','campaigns','automation_rules'
+      ]) then
+        new.created_by := auth.uid();
+      elsif tg_table_name = 'sales_outcomes' then
+        new.recorded_by := auth.uid();
+      end if;
     end if;
-    if auth.uid() is not null and tg_table_name = 'sales_outcomes' then
-      new.recorded_by := auth.uid();
-    end if;
+
     if tg_table_name = 'leads' then
       new.updated_by := coalesce(auth.uid(), new.updated_by);
-    elsif tg_table_name = 'campaigns' and new.status in ('approved','scheduled') and auth.uid() is not null then
-      new.approved_by := auth.uid();
-      new.approved_at := now();
-    elsif tg_table_name = 'automation_rules' and new.status = 'active' and auth.uid() is not null then
-      new.approved_by := auth.uid();
-      new.approved_at := now();
+    elsif tg_table_name = 'campaigns' then
+      if new.status in ('approved','scheduled') and auth.uid() is not null then
+        new.approved_by := auth.uid();
+        new.approved_at := now();
+      end if;
+    elsif tg_table_name = 'automation_rules' then
+      if new.status = 'active' and auth.uid() is not null then
+        new.approved_by := auth.uid();
+        new.approved_at := now();
+      end if;
     end if;
     return new;
   end if;
@@ -55,13 +61,16 @@ begin
     raise exception 'actor_user_id is immutable' using errcode = '23514';
   end if;
 
-  if tg_table_name = 'campaigns' and old.approved_at is not null
-     and (new.approved_by is distinct from old.approved_by or new.approved_at is distinct from old.approved_at) then
-    raise exception 'Campaign approval attribution is immutable' using errcode = '23514';
-  end if;
-  if tg_table_name = 'automation_rules' and old.approved_at is not null
-     and (new.approved_by is distinct from old.approved_by or new.approved_at is distinct from old.approved_at) then
-    raise exception 'Automation approval attribution is immutable' using errcode = '23514';
+  if tg_table_name = 'campaigns' then
+    if old.approved_at is not null
+       and (new.approved_by is distinct from old.approved_by or new.approved_at is distinct from old.approved_at) then
+      raise exception 'Campaign approval attribution is immutable' using errcode = '23514';
+    end if;
+  elsif tg_table_name = 'automation_rules' then
+    if old.approved_at is not null
+       and (new.approved_by is distinct from old.approved_by or new.approved_at is distinct from old.approved_at) then
+      raise exception 'Automation approval attribution is immutable' using errcode = '23514';
+    end if;
   end if;
 
   if tg_table_name = 'leads' then
