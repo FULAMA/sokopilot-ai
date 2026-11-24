@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDemoSeed } from '../src/data/demoSeed';
-import { loadRepositoryState, saveRepositoryState } from '../src/services/storage';
+import { loadRepositoryState, resetRepositoryState, saveRepositoryState, upsertOffer } from '../src/services/storage';
 import { isValidDemoRepositoryState } from '../src/services/demoStateValidation';
 
 const STORAGE_KEY = 'sokopilot_revenue_hub_demo_v1';
@@ -56,4 +56,24 @@ test('returns false when saving fails because browser storage is unavailable', (
   installLocalStorage({}, true);
 
   assert.equal(saveRepositoryState(createDemoSeed()), false);
+});
+
+
+test('keeps the previous in-memory state when an offer cannot be persisted', () => {
+  installLocalStorage({}, true);
+  const state = createDemoSeed();
+  const offer = { ...state.offers[0], name: 'Modification non persistée' };
+
+  const result = upsertOffer(state, offer, false, 'Test');
+
+  assert.equal(result, state);
+  assert.notEqual(result.offers[0].name, 'Modification non persistée');
+});
+
+test('does not reset in-memory data when the reset cannot be persisted', () => {
+  installLocalStorage({}, true);
+  const state = createDemoSeed();
+  const result = resetRepositoryState(state);
+
+  assert.equal(result, state);
 });
