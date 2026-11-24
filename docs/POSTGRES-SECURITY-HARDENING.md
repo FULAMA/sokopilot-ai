@@ -8,6 +8,8 @@
 - Prevents a commit from leaving an organization without at least one active owner. A deferred constraint trigger supports atomic organization onboarding and locks the organization row to serialize competing owner-removal attempts.
 - Rejects credential-like JSON keys recursively in integration metadata and automation configuration.
 - Makes audit events append-only, preserves actor IDs when Auth profiles are deleted, and prevents organization deletion from silently cascading away audit history.
+- Freezes approved campaign content and approved automation configuration; approval actor/time cannot be rewritten and approval-state fields must remain consistent.
+- Grants the trusted server role explicit table/sequence privileges while authenticated clients remain restricted by RLS and table grants.
 - Adds structural checks and a two-organization integration regression test.
 
 ## Required verification
