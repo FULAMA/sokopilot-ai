@@ -25,9 +25,9 @@
 | 7 | Base44 | Prototype alternatif / comparaison rapide de parcours UX | Indirect | Projet vide créé; pas de connexion backend utilisable vérifiée |
 | 8 | CodeWords | Génération et hébergement d'outils auxiliaires ou microservices si le besoin est confirmé | Indirect | Disponible, non utilisé |
 | 9 | Firecrawl | Collecte contrôlée de données publiques de centres de formation pour la prospection et la veille | Direct via pipeline d'import | Disponible, aucune collecte SOKOPILOT exécutée |
-| 10 | GitHub | Source de vérité du code, issues, revues, CI et traçabilité des versions | Indirect + intégration développeur | Connecté; dépôt FULAMA/sokopilot-ai confirmé, branche d'audit créée |
+| 10 | GitHub | Source de vérité du code, issues, revues, CI et traçabilité des versions | Indirect + intégration développeur | Partiellement utilisé et connecté : branches/PR/CI inspectées; workflow qualité + npm audit + Gitleaks CLI actifs sur la branche d'audit |
 | 11 | Gmail | Réception des demandes de démonstration, suivi commercial et support interne | Direct via backend / indirect pour l'équipe | Connecteur disponible; intégration produit non testée |
-| 12 | HAPI MCP Registry | Découverte de serveurs MCP spécialisés utiles aux connecteurs futurs | Indirect | Disponible, pas de serveur tiers ajouté |
+| 12 | HAPI MCP Registry | Découverte de serveurs MCP spécialisés utiles aux connecteurs futurs | Indirect | Partiellement utilisé : recherche de scanners de secrets effectuée; Gitleaks Cloud trouvé via Apify mais non activé (jeton Apify et facturation requis) |
 | 13 | Lovable | Prototypage UX et comparaison de génération d'interfaces | Indirect | Projet SokoPilot Revenue Hub existant, génération limitée par crédits |
 | 14 | Make Agent Fast | Agent conversationnel de support ou qualification, seulement si plan actif et coût viable | Direct, conditionnel | Non opérationnel : plan expiré signalé |
 | 15 | Manus | Recherche approfondie, tâches multi-étapes et assistance à l'exploitation | Indirect | Disponible, non utilisé dans le runtime |
@@ -37,7 +37,7 @@
 | 19 | Notion | Documentation produit, décisions d'architecture, procédures et base de connaissances interne | Indirect | Partiellement utilisé : blueprint et validation commerciale créés |
 | 20 | OpenSEO | Recherche de mots-clés et suivi SEO des pages publiques / campagnes | Direct via connecteur autorisé | Disponible, projet SEO client non configuré |
 | 21 | Plugin Creator | Création future d'une intégration privée SOKOPILOT si une API métier le justifie | Indirect | Disponible, aucun plugin créé |
-| 22 | Plugin Management | Inventaire, installation et gouvernance des connecteurs de l'environnement de travail | Indirect | Disponible; ne constitue pas un connecteur runtime client |
+| 22 | Plugin Management | Inventaire, installation et gouvernance des connecteurs de l'environnement de travail | Indirect | Partiellement utilisé : recherche de scanners de sécurité (Snyk et alternatives); aucun scanner gratuit approprié retenu; ne constitue pas un connecteur runtime client |
 | 23 | Render | Hébergement de services backend, workers et tâches planifiées si le plan gratuit suffit | Indirect + infrastructure | Workspace accessible, aucun service SOKOPILOT déployé |
 | 24 | Replit | Environnement alternatif de prototypage et validation technique | Indirect | Disponible, non utilisé pour le dépôt principal |
 | 25 | Resend | Emails transactionnels, notifications et suivi de livraison | Direct via backend | Disponible, domaine et clé de production non configurés |
@@ -83,3 +83,15 @@ Pour passer à **Intégré / testé**, ajouter dans le dossier de documentation 
 - estimation du coût récurrent et vérification des limites du plan gratuit.
 
 **Aucune promesse de connexion réelle n'est faite par la seule présence de ce registre.**
+
+
+## Preuve d'utilisation — audit sécurité du 24 novembre 2026
+
+- GitHub : inspection du dépôt et de son historique, vérification des PR et exécutions CI.
+- Gitleaks CLI v8.30.1 (MIT) : 32 commits analysés, environ 396 993 octets inspectés, aucun secret détecté.
+- npm audit : zéro vulnérabilité signalée au niveau high ou supérieur.
+- HAPI MCP Registry : découverte d'un scanner Gitleaks Cloud, écarté car son exécution passe par Apify et nécessite un jeton facturable.
+- Plugin Management : recherche d'intégrations Snyk et d'alternatives de sécurité; aucune installation supplémentaire n'a été déclenchée.
+- Rapport détaillé : [SECURITY-AUDIT.md](./SECURITY-AUDIT.md).
+
+Cette preuve concerne l'usage des connecteurs pour construire et sécuriser le projet; elle ne signifie pas que ces connecteurs sont intégrés au runtime client de SOKOPILOT AI.
