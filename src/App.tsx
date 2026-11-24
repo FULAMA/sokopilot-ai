@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityItem,
   Campaign,
@@ -44,6 +44,13 @@ export default function App() {
   const [focusedLeadId, setFocusedLeadId] = useState<string | undefined>(undefined);
   const [prospectsStageFilter, setProspectsStageFilter] = useState<LeadStage | 'Tous'>('Tous');
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [persistenceError, setPersistenceError] = useState(false);
+
+  useEffect(() => {
+    const handlePersistenceError = () => setPersistenceError(true);
+    window.addEventListener('sokopilot:persistence-error', handlePersistenceError);
+    return () => window.removeEventListener('sokopilot:persistence-error', handlePersistenceError);
+  }, []);
 
   const currentActor = 'Chantal Mukendi';
 
@@ -109,7 +116,7 @@ export default function App() {
         leads: updatedLeads,
         activities: [newActivity, ...prev.activities].slice(0, 30),
       };
-      saveRepositoryState(next);
+      if (!saveRepositoryState(next)) return prev;
       return next;
     });
   };
@@ -147,7 +154,7 @@ export default function App() {
         : prev.activities;
 
       const next = { ...prev, followUps: nextFollowUps, activities: nextActivities };
-      saveRepositoryState(next);
+      if (!saveRepositoryState(next)) return prev;
       return next;
     });
   };
@@ -158,7 +165,7 @@ export default function App() {
         ...prev,
         followUps: prev.followUps.map((t) => (t.id === updated.id ? updated : t)),
       };
-      saveRepositoryState(next);
+      if (!saveRepositoryState(next)) return prev;
       return next;
     });
   };
@@ -169,7 +176,7 @@ export default function App() {
         ...prev,
         followUps: [task, ...prev.followUps],
       };
-      saveRepositoryState(next);
+      if (!saveRepositoryState(next)) return prev;
       return next;
     });
   };
@@ -205,7 +212,7 @@ export default function App() {
           ...prev.automationAudit,
         ],
       };
-      saveRepositoryState(next);
+      if (!saveRepositoryState(next)) return prev;
       return next;
     });
   };
@@ -219,7 +226,8 @@ export default function App() {
   };
 
   const handleConfirmResetDemo = () => {
-    const fresh = resetRepositoryState();
+    const fresh = resetRepositoryState(state);
+    if (fresh === state) return;
     setState(fresh);
     setFocusedLeadId(undefined);
     setProspectsStageFilter('Tous');
@@ -230,6 +238,12 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
+      {persistenceError && (
+        <div role="alert" className="fixed bottom-4 right-4 z-[100] max-w-md rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-lg">
+          Échec de sauvegarde locale : vos modifications n’ont pas été enregistrées. Vérifiez l’espace disponible et les autorisations de stockage de votre navigateur.
+          <button type="button" onClick={() => setPersistenceError(false)} className="ml-3 font-semibold underline">Fermer</button>
+        </div>
+      )}
       <Sidebar
         activeSection={activeSection}
         onSelectSection={(sec) => handleNavigate(sec)}
