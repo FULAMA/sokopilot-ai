@@ -11,34 +11,47 @@ import {
   TeamRole,
 } from '../types/domain';
 import { getLocalIsoDate } from '../utils/format';
+import { isValidDemoRepositoryState } from './demoStateValidation';
 
 const STORAGE_KEY = 'sokopilot_revenue_hub_demo_v1';
+const CORRUPT_BACKUP_KEY = 'sokopilot_revenue_hub_demo_corrupt_backup_v1';
 
 export function loadRepositoryState(): DemoRepositoryState {
+  const seed = createDemoSeed();
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const seed = createDemoSeed();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
       return seed;
     }
-    const parsed = JSON.parse(raw) as DemoRepositoryState;
-    if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.leads)) {
-      const seed = createDemoSeed();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+
+    const parsed: unknown = JSON.parse(raw);
+    if (isValidDemoRepositoryState(parsed, seed)) return parsed;
+
+    // Preserve malformed user data before restoring the demo seed.
+    try {
+      localStorage.setItem(CORRUPT_BACKUP_KEY, raw);
+    } catch {
+      // The original key is still left untouched if backup storage is full.
       return seed;
     }
-    return parsed;
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
+    return seed;
   } catch {
-    return createDemoSeed();
+    // If storage is unavailable, keep the app usable in memory.
+    return seed;
   }
 }
 
-export function saveRepositoryState(state: DemoRepositoryState): void {
+/** Returns false when browser storage is unavailable or quota is exceeded. */
+export function saveRepositoryState(state: DemoRepositoryState): boolean {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
   } catch {
-    // Ignore storage quota errors in sandboxed iframes
+    return false;
   }
 }
 
