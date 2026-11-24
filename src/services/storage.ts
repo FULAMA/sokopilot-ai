@@ -16,6 +16,14 @@ import { isValidDemoRepositoryState } from './demoStateValidation';
 const STORAGE_KEY = 'sokopilot_revenue_hub_demo_v1';
 const CORRUPT_BACKUP_KEY = 'sokopilot_revenue_hub_demo_corrupt_backup_v1';
 
+function preserveCorruptData(raw: string): void {
+  try {
+    localStorage.setItem(CORRUPT_BACKUP_KEY, raw);
+  } catch {
+    // Recovery must remain possible even when the backup cannot be written.
+  }
+}
+
 export function loadRepositoryState(): DemoRepositoryState {
   const seed = createDemoSeed();
 
@@ -26,17 +34,20 @@ export function loadRepositoryState(): DemoRepositoryState {
       return seed;
     }
 
-    const parsed: unknown = JSON.parse(raw);
-    if (isValidDemoRepositoryState(parsed, seed)) return parsed;
-
-    // Preserve malformed user data before restoring the demo seed.
+    let parsed: unknown;
     try {
-      localStorage.setItem(CORRUPT_BACKUP_KEY, raw);
+      parsed = JSON.parse(raw);
     } catch {
-      // The original key is still left untouched if backup storage is full.
+      // Preserve invalid JSON too; otherwise a recovery would destroy evidence.
+      preserveCorruptData(raw);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
       return seed;
     }
 
+    if (isValidDemoRepositoryState(parsed, seed)) return parsed;
+
+    // Preserve structurally malformed data before restoring the demo seed.
+    preserveCorruptData(raw);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
     return seed;
   } catch {
